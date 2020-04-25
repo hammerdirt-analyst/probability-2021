@@ -25,7 +25,6 @@ def make_directory(needed, here):
     for folder in needed:
         place = here +"/"+ folder
         os.mkdir(place)
-
 def check_for_folders(folders, here):
     """Checks the names of the folder list against the currrent directory. If the result is not
     an empty set then the required names are added to the directory structure.
@@ -154,51 +153,6 @@ def dict_to_csv(the_dict, a_name, prefix):
         dict_writer = csv.DictWriter(output_file, keys)
         dict_writer.writeheader()
         dict_writer.writerows(the_dict)
-def getIndexValues(aDf, anInt):
-    return aDf.index.get_level_values(anInt).unique()
-def getSummaryByKeyValue(aDf, anInt):
-    aList = list(getIndexValues(aDf, anInt))
-    theSummaries = {}
-    for key in aList:
-        aSummary = aDf.loc[key].describe().to_dict()
-        theSummaries.update({key:aSummary["pcs_m"]})
-    return aList, theSummaries
-def convertStringToDate(aTuple):
-    """converts an array of 2d tuple string dates to python datetime objects
-    """
-    convertedDates = []
-    for pair in aTuple:
-        newPair = (datetime.datetime.strptime(pair[0], "%Y-%m-%d"), datetime.datetime.strptime(pair[1], "%Y-%m-%d"))
-        convertedDates.append(newPair)
-    return convertedDates
-def getSummaryByKeyValueMulti(aDf, anInt):
-    aList = list(getIndexValues(aDf, anInt))
-    theSummaries = {}
-    for key in aList:
-        aSummary = aDf.loc[idx[:,key,:,:], :].describe().to_dict()
-        theSummaries.update({key:aSummary["pcs_m"]})
-    return aList, theSummaries
-def makeListOfBars(aDict, aKey):
-    aList = []
-    theKeys = aDict.keys()
-    for key in theKeys:
-        values = aDict[key][aKey]
-        aList.append([key,values])
-    return aList
-def sortInReverse(the_data, anIndex):
-    the_data_sorted = sorted(the_data, key=lambda row: row[anIndex], reverse=True)
-    return the_data_sorted
-def percent_of_total_and_frequency(quantDict, freqDict, total, num_samps):
-    new_dict = {}
-    for k,v in quantDict.items():
-        freq = freqDict[k]
-        new_dict.update({k:[v,v/total,freq,freq/num_samps]})
-    return new_dict
-def quantity_frequency(quant, freq, codes):
-    qVsF = []
-    for code in codes:
-        qVsF.append([code, quant[code], freq[code]])
-    return qVsF
 def get_data_by_date_range(a_df, date_range):
     """Slices a dataframe by the given data range.
 
@@ -208,29 +162,22 @@ def get_data_by_date_range(a_df, date_range):
     return this_data
 def get_code_totals_from_date_range(a_df):
     return a_df.groupby(['code'])["quantity"].aggregate(np.sum).sort_values(ascending=False)
-def get_code_frequency_from_date_range(data):
-    return a_df.groupby(["code"])['code'].count().sort_values(ascending=False)
-def get_num_samps(a_df):
-    return a_df[['location_id', 'py_date','quantity']].groupby(['location_id', 'py_date']).sum().count().values[0]
 def get_tuples_from_series(a_df):
+    """Makes a 2d tuple from the index value and column value of a
+    dataframe of series with one column and an index
+    """
     return list(zip(a_df.index, a_df))
 def get_the_rest(a_list, total_quant):
+    """Returns the difference between some given value and the sum of an array of 2d tuples.
+    """
     some_number = 0
     for x in a_list:
         some_number += x[1]
     return total_quant - some_number
-def make_blocks(a_df, percent, end_start, total_quant, code_dict, top_ten=False):
-    code_totals = get_code_totals_from_date_range(a_df)
-    code_totals_tuple = get_tuples_from_series(code_totals)
-    code_greater_than = [
-        (x[0],x[1],code_dict[x[0]][1])
-        for i,x in enumerate(code_totals_tuple)
-        if x[1] >= percent
-    ]
-    the_rest = get_the_rest(code_greater_than, total_quant)
-    code_greater_than.append(("Other", the_rest,"*All other objects"))
-    return code_greater_than
+
 def start_end_date(start, end, date_format):
+    """Returns a tuple datetime objects (start, end) from string dates using the given format.
+    """
     return ((datetime.datetime.strptime(start, date_format), datetime.datetime.strptime(end, date_format)))
 def a_color_map(color_map_name='PuBuGn', look_up_table_entries=100):
     # provide a color map https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html
@@ -268,15 +215,3 @@ def save_the_figure(folder='a/file/path/', file_name='a_file', file_suffix=[]):
             plt.savefig(save_me, bbox_inches="tight", dpi=300)
         else:
             plt.savefig(save_me, bbox_inches="tight")
-def make_stacked_blocks(the_data, ax, color):
-    the_bottom = 0
-    for i,block in enumerate(the_data):
-            if i == 0:
-                ax.bar(1, block[1], color=next(color), edgecolor="white", alpha=0.9,
-                        label="{}: {:,}".format(block[2],block[1]))
-                the_bottom += block[1]
-            else:
-                ax.bar(1, block[1], color=next(color), edgecolor="white",alpha=0.9,
-                       bottom=the_bottom,
-                       label="{}: {:,}".format(block[2],block[1]))
-                the_bottom += block[1]
